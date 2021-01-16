@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0 auto;
+        }
+        .content{
+            width: 800px;
+            height: 480px;
+            margin-top: 200px;
+            position: relative;
+        }
+        .content .bg{
+            width: 100%;
+            height: 100%;
+            background: url("images/timg.jpg");
+        }
+        .start{
+            width: 96px;
+            height: 96px;
+            position: absolute;
+            border-radius: 48px;        /*圆角半径是直径的一半，就是一个圆*/
+            left: 42%;
+            bottom: 70px;
+            cursor: pointer;        /*改变鼠标手势*/
+        }
+        .game{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: url("images/game.jpg") no-repeat;
+            background-size: 100% 100%;
+        }
+        .game .gameInfo{
+            width: 480px;
+            height: 300px;
+            margin: 50px auto 0;
+        }
+        .game .gameInfo div{
+            width: 30px;
+            height: 30px;
+            float: left;
+            box-sizing: border-box;
+            background-size: 30px 30px;
+            color: rgba(0,0,0,0);
+            user-select: none;      /*禁止用户选择*/
+            cursor: pointer;
+        }
+        .score{
+            display: none;
+            font-size: 40px;
+            color:red;
+            position: absolute;
+            top:45%;
+            right: 60px;
+        }
+        .program{
+            width: 600px;
+            height:2px;
+            border: 2px solid red;
+            position: absolute;
+            left: 100px;
+            bottom: 80px;
+            display: none;
+        }
+        .times{
+            height: 100%;
+            background-color: red;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="bg"></div>
+        <div class="start"></div>
+        <div class="game" style="display: none;">
+            <div class="gameInfo"></div>
+        </div>
+        <div class="score">0</div>
+        <div class="program">
+            <div class="times" style="width: 600px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let content = document.querySelector(".content");
+        let bg = document.querySelector(".bg");
+        let start = document.querySelector(".start");
+        let game = document.querySelector(".game");
+        let gameInfo = document.querySelector(".gameInfo");
+        let score = document.querySelector(".score");
+        let times = document.querySelector(".times");
+        let program = document.querySelector(".program");
+
+        //创建地图数组
+        let row = 2;
+        let col = 2;
+        let map = new Array();
+
+        let obj1 = null;
+        let count = 0;
+
+        let interval;
+
+        //首先，来定义一个临时的数组
+        let temp = new Array();
+        for(let i = 0; i < row * col; i+=2){
+            let num = Math.floor( Math.random() * 23 );
+            temp[i] = num;
+            temp[i + 1] = num;
+        }
+
+        //随机排序
+        temp.sort(function(a,b){    //自定义排序方法     a b 分别代表即将要排序的两个值      这个自定义的排序方法，如果返回大于0的值，代表两个值交换位置，否则，不交换位置
+            //return a > b ? 1 : -1;    自然排序
+            return 0.5 - Math.random();
+        });
+
+        //console.log( temp );
+
+        for(let i = 0; i < row ; i++) {
+            map[i] = new Array();
+            for (let j = 0; j < col; j++) {
+                map[i][j] = temp.shift();       //删除数组的第一个值，并且返回
+            }
+        }
+
+
+        //开始游戏的点击事件
+        start.onclick = function(){
+            bg.style.display = "none";
+            this.style.display = "none";
+
+            game.style.display = "block";
+            score.style.display = "block";
+            program.style.display = "block";
+            //开始游戏，开始创建div
+            createDiv();
+
+            //添加点击事件
+            addEvent();
+
+            //开启定时器
+            interval = setInterval(function(){
+                //假设我们总共60秒的游戏时间
+                times.style.width = parseInt(times.style.width) - 1 + "px";
+                if( parseInt(times.style.width) <= 0  ){
+                    //时间到了
+                    clearInterval(interval);
+                    alert("游戏结束，您的最终得分为：" + score.innerHTML);
+                    location.reload();  //刷新网页
+                }
+            },100)
+        }
+
+        //添加点击事件
+        function addEvent(){
+            let divs = document.querySelectorAll(".gameInfo div");
+
+            //开始循环添加事件
+
+            divs.forEach((el)=>{
+                el.onclick = function(){
+                    if(  this.innerHTML == "" || this.innerHTML == null  ){
+                        return;
+                    }
+                    //首先，点击
+                    if( obj1 == null ){
+                        el.style.border = "2px solid red";
+                        obj1 = el;
+                    }else if( obj1 == el ){
+                        obj1.style.border = "none";
+                        obj1 = null;
+                    }else{
+                        //在消除之前，先判断
+                        if(  obj1.innerHTML == el.innerHTML  ){
+                            //消除
+                            if(  clear(el) ){
+                                //可以消除
+                                obj1.style.backgroundImage = "none";
+                                obj1.style.border = "none";
+                                obj1.innerHTML = "";
+                                obj1 = null;
+                                el.style.backgroundImage = "none";
+                                el.innerHTML = "";
+
+                                //加分
+                                score.innerHTML = parseInt( score.innerHTML ) + 10;
+                                times.style.width = parseInt(times.style.width) + 10 + "px";
+
+                                //消除结束
+                                count+=2;
+                                if( count == row * col ){
+                                    clearInterval(interval);
+                                    alert("游戏结束，您的最终得分为：" + score.innerHTML);
+                                    location.reload();  //刷新网页
+                                }
+                            }else{
+                                obj1.style.border = "none";
+                                obj1 = null;
+                            }
+                        }else{
+                            obj1.style.border = "none";
+                            obj1 = null;
+                        }
+                    }
+                }
+            })
+        }
+
+        //消除
+        function clear(obj2){
+            //消除，有三种逻辑情况
+            //单线消除    双线消除     三线消除
+            let x1 = parseInt( obj1.getAttribute("x") );
+            let y1 = parseInt( obj1.getAttribute("y") );
+            let x2 = parseInt( obj2.getAttribute("x") );
+            let y2 = parseInt( obj2.getAttribute("y") );
+
+            if(  oneLine(x1,y1,x2,y2) || twoLine(x1,y1,x2,y2) || threeLine(x1,y1,x2,y2)  ){
+                //如果能够消除
+                map[x1][y1] = -1;
+                map[x2][y2] = -1;
+                return true;
+            }
+        }
+
+        //单线消除
+        function oneLine(x1, y1, x2, y2){
+            //判断同行，或者同列
+            if( x1 == x2 ){
+                //从下个点开始，循环到b点的前一个值
+                //循环，不能是有y1循环到y2，而应该是小值，循环到大值
+                let max = y1 > y2 ? y1 : y2;
+                let min = y1 < y2 ? y1 : y2;
+
+                for(let i = min + 1; i < max; i++){
+                    //判断，中间有没有其他的值
+                    if( map[x1][i] != -1 ){
+                        //意味着中间有值
+                        return false;
+                    }
+                }
+                //整个for循环结束，都没有执行return false，意味着所有的值都等于-1
+                return true;
+            }else if( y1 == y2 ){
+                let max = x1 > x2 ? x1 : x2;
+                let min = x1 < x2 ? x1 : x2;
+
+                for(let i = min + 1; i < max; i++){
+                    //判断，中间有没有其他的值
+                    if( map[i][y1] != -1 ){
+                        //意味着中间有值
+                        return false;
+                    }
+                }
+                return true;
+            }else{
+                //既不同行有不同列，单线就消除不了，因此直接返回false
+                return false;
+            }
+        }
+
+        //双线
+        function twoLine(x1, y1, x2, y2){
+            //首先，判断转折点
+            let zx1 = x1;
+            let zy1 = y2;
+            if( map[zx1][zy1] == -1 && oneLine(x1,y1,zx1,zy1) && oneLine(zx1,zy1,x2,y2) ){
+                return true;
+            }
+
+            let zx2 = x2;
+            let zy2 = y1;
+            if( map[zx2][zy2] == -1 && oneLine(x1,y1,zx2,zy2) && oneLine(zx2,zy2,x2,y2) ){
+                return true;
+            }
+
+            return false;
+        }
+
+        //三线
+        function threeLine(x1, y1, x2, y2){
+            //一样的，首先，还是找转折点
+            let zx1 = x1;
+            let zy1;
+            for(let i = 0; i < col; i++){
+                zy1 = i;
+                //任何一个点，都有可能成为转折点，转折点，必定是空的
+                if( map[zx1][zy1] == -1 && oneLine(x1,y1,zx1,zy1) && twoLine(zx1,zy1,x2,y2) ){
+                    return true;
+                }
+            }
+
+            let zx2;
+            let zy2 = y1;
+            for(let i = 0; i < row; i++){
+                zx2 = i;
+                //任何一个点，都有可能成为转折点，转折点，必定是空的
+                if( map[zx2][zy2] == -1 && oneLine(x1,y1,zx2,zy2) && twoLine(zx2,zy2,x2,y2) ){
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        //开始创建
+        function createDiv(){
+            for(let i = 0; i < row ; i++) {
+                for (let j = 0; j < col; j++) {
+                    let myDiv = document.createElement("div");
+                    myDiv.innerHTML = map[i][j];
+                    myDiv.style.backgroundImage = "url(images/"+map[i][j]+".gif)";
+                    //添加属性
+                    myDiv.setAttribute("x" , i);
+                    myDiv.setAttribute("y" , j);
+
+                    //追加子节点，将myDiv这个节点，追加到gameInfo里面去
+                    gameInfo.appendChild(myDiv);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
